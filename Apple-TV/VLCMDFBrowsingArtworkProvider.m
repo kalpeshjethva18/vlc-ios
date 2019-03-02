@@ -32,11 +32,35 @@
     }
 }
 
-- (NSString*)pathForCachedFile:(NSString*)named {
+- (NSString*)cacheDirectory {
     NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-    NSString * cacheFileBase = [NSString stringWithFormat:@"%@.jpg", [named stringByDeletingPathExtension]];
+    NSString *thumbnailCaches = [cachesPath stringByAppendingPathComponent:@"Thumbnails"];
+    
+    NSError * error = nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:thumbnailCaches
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:&error];
+    if (error != nil) {
+        NSLog(@"Error creating thumbnail cache directory: %@", error);
+    }
+    
+    return thumbnailCaches;
+}
 
-    return [cachesPath stringByAppendingPathComponent:cacheFileBase];
+- (NSString*)pathForCachedFile:(NSString*)named
+{
+    NSString *cacheFileBase = [NSString stringWithFormat:@"%@.jpg", [named stringByDeletingPathExtension]];
+
+    NSString *cacheFile = [[self cacheDirectory] stringByAppendingPathComponent:cacheFileBase];
+    
+    return cacheFile;
+}
+
+-(void)saveDataToCache:(NSData*)data named:(NSString*)name
+{
+    NSString *cacheFile = [self pathForCachedFile:name];
+    [data writeToFile:cacheFile atomically:YES];
 }
 
 - (void)setSearchForAudioMetadata:(BOOL)searchForAudioMetadata
@@ -48,7 +72,7 @@
 {
     NSString *cacheFile = [self pathForCachedFile:string];
     NSURL *cacheFileURL = [NSURL fileURLWithPath:cacheFile];
-    
+
     if ([[NSFileManager defaultManager] fileExistsAtPath:cacheFile]) {
         self.artworkReceiver.thumbnailImage = [UIImage imageWithData: [NSData dataWithContentsOfURL:cacheFileURL]];
         return;
@@ -106,8 +130,7 @@
                                     imagePath];
     NSURL *url = [NSURL URLWithString:thumbnailURLString];
     NSData *data = [NSData dataWithContentsOfURL:url];
-    NSString *cacheFile = [self pathForCachedFile:searchRequest];
-    [data writeToFile:cacheFile atomically:YES];
+    [self saveDataToCache:data named:searchRequest];
 
     self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
 }
@@ -156,10 +179,9 @@
                                     sessionManager.imageBaseURL,
                                     imageSize,
                                     imagePath];
-    NSString *cacheFile = [self pathForCachedFile:searchRequest];
     NSURL *url = [NSURL URLWithString:thumbnailURLString];
     NSData *data = [NSData dataWithContentsOfURL:url];
-    [data writeToFile:cacheFile atomically:YES];
+    [self saveDataToCache:data named:searchRequest];
     
     self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
 }
