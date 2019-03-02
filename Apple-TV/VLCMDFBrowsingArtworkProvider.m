@@ -73,12 +73,47 @@
     NSString *cacheFile = [self pathForCachedFile:string];
     NSURL *cacheFileURL = [NSURL fileURLWithPath:cacheFile];
 
+    // If a cached thumbnail exists for the name, load it in the background.
     if ([[NSFileManager defaultManager] fileExistsAtPath:cacheFile]) {
-        self.artworkReceiver.thumbnailImage = [UIImage imageWithData: [NSData dataWithContentsOfURL:cacheFileURL]];
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+            // Load from disk
+            NSData *data = [NSData dataWithContentsOfURL:cacheFileURL];
+
+            // Load image data
+            UIImage *image = [UIImage imageWithData: data];
+            
+            // Assign artwork thumbnail on main thread.
+            dispatch_async(dispatch_get_main_queue(), ^{
+                self.artworkReceiver.thumbnailImage = image;
+            });
+        });
         return;
     }
 
     [_tmdbFetcher searchForMovie:string];
+}
+
+- (void)downloadAndCacheFile:(NSString*)thumbnailUrl forSearchQuery:(NSString*)searchRequest
+{
+    // In the background, download the file, and convert to UIImage.
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        // Download File
+        NSURL *url = [NSURL URLWithString:thumbnailUrl];
+        NSData *data = [NSData dataWithContentsOfURL:url];
+        
+        if (data != nil) {
+            // Save data to cache
+            [self saveDataToCache:data named:searchRequest];
+            
+            // Convert to UIImage
+            UIImage *image = [UIImage imageWithData:data];
+            
+            // Assign artwork thumbnail on main thread
+            dispatch_async(dispatch_get_main_queue(), ^{
+                self.artworkReceiver.thumbnailImage = image;
+            });
+        }
+    });
 }
 
 #pragma mark - MDFMovieDB
@@ -128,11 +163,8 @@
                                     sessionManager.imageBaseURL,
                                     imageSize,
                                     imagePath];
-    NSURL *url = [NSURL URLWithString:thumbnailURLString];
-    NSData *data = [NSData dataWithContentsOfURL:url];
-    [self saveDataToCache:data named:searchRequest];
-
-    self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
+    
+    [self downloadAndCacheFile:thumbnailURLString forSearchQuery:searchRequest];
 }
 
 - (void)MDFMovieDBFetcher:(MDFMovieDBFetcher *)aFetcher didFailToFindMovieForSearchRequest:(NSString *)searchRequest
@@ -179,11 +211,8 @@
                                     sessionManager.imageBaseURL,
                                     imageSize,
                                     imagePath];
-    NSURL *url = [NSURL URLWithString:thumbnailURLString];
-    NSData *data = [NSData dataWithContentsOfURL:url];
-    [self saveDataToCache:data named:searchRequest];
-    
-    self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
+
+    [self downloadAndCacheFile:thumbnailURLString forSearchQuery:searchRequest];
 }
 
 - (void)MDFMovieDBFetcher:(MDFMovieDBFetcher *)aFetcher didFailToFindTVShowForSearchRequest:(NSString *)searchRequest
