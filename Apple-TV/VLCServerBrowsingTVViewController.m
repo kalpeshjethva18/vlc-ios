@@ -38,6 +38,8 @@
         _browsingController = [[VLCServerBrowsingController alloc] initWithViewController:self serverBrowser:serverBrowser];
 
         self.title = serverBrowser.title;
+        
+        self.trimPathExtensions = [[NSUserDefaults standardUserDefaults] boolForKey:kVLCSettingTrimPathExtensions];
 
         self.downloadArtwork = [[NSUserDefaults standardUserDefaults] boolForKey:kVLCSettingDownloadArtwork];
     }
@@ -166,6 +168,7 @@
 
         if ([cell isKindOfClass:[VLCRemoteBrowsingTVCell class]]) {
             ((VLCRemoteBrowsingTVCell *) cell).downloadArtwork = self.downloadArtwork;
+            ((VLCRemoteBrowsingTVCell *) cell).trimPathExtensions = self.trimPathExtensions;
         }
 
         if ([cell conformsToProtocol:@protocol(VLCRemoteBrowsingCell)]) {

@@ -62,6 +62,7 @@
 #define kVLCSettingSaveHTTPUploadServerStatus @"isHTTPServerOn"
 #define kVLCAutomaticallyPlayNextItem @"AutomaticallyPlayNextItem"
 #define kVLCSettingDownloadArtwork @"download-artwork"
+#define kVLCSettingTrimPathExtensions @"trim-path-extensions"
 #define kVLCSettingUseSPDIF @"kVLCSettingUseSPDIF"
 
 #define kVLCSettingLastUsedSubtitlesSearchLanguage @"kVLCSettingLastUsedSubtitlesSearchLanguage"
