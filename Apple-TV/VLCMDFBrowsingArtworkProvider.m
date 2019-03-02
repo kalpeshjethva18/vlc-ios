@@ -32,6 +32,13 @@
     }
 }
 
+- (NSString*)pathForCachedFile:(NSString*)named {
+    NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    NSString * cacheFileBase = [NSString stringWithFormat:@"%@.jpg", [named stringByDeletingPathExtension]];
+
+    return [cachesPath stringByAppendingPathComponent:cacheFileBase];
+}
+
 - (void)setSearchForAudioMetadata:(BOOL)searchForAudioMetadata
 {
     NSLog(@"there is currently no audio metadata fetcher :-(");
@@ -39,6 +46,14 @@
 
 - (void)searchForArtworkForVideoRelatedString:(NSString *)string
 {
+    NSString *cacheFile = [self pathForCachedFile:string];
+    NSURL *cacheFileURL = [NSURL fileURLWithPath:cacheFile];
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:cacheFile]) {
+        self.artworkReceiver.thumbnailImage = [UIImage imageWithData: [NSData dataWithContentsOfURL:cacheFileURL]];
+        return;
+    }
+
     [_tmdbFetcher searchForMovie:string];
 }
 
@@ -89,7 +104,12 @@
                                     sessionManager.imageBaseURL,
                                     imageSize,
                                     imagePath];
-    self.artworkReceiver.thumbnailURL = [NSURL URLWithString:thumbnailURLString];
+    NSURL *url = [NSURL URLWithString:thumbnailURLString];
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    NSString *cacheFile = [self pathForCachedFile:searchRequest];
+    [data writeToFile:cacheFile atomically:YES];
+
+    self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
 }
 
 - (void)MDFMovieDBFetcher:(MDFMovieDBFetcher *)aFetcher didFailToFindMovieForSearchRequest:(NSString *)searchRequest
@@ -136,7 +156,12 @@
                                     sessionManager.imageBaseURL,
                                     imageSize,
                                     imagePath];
-    self.artworkReceiver.thumbnailURL = [NSURL URLWithString:thumbnailURLString];
+    NSString *cacheFile = [self pathForCachedFile:searchRequest];
+    NSURL *url = [NSURL URLWithString:thumbnailURLString];
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    [data writeToFile:cacheFile atomically:YES];
+    
+    self.artworkReceiver.thumbnailImage = [UIImage imageWithData: data];
 }
 
 - (void)MDFMovieDBFetcher:(MDFMovieDBFetcher *)aFetcher didFailToFindTVShowForSearchRequest:(NSString *)searchRequest
