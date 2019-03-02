@@ -47,6 +47,7 @@ NSString *const VLCRemoteBrowsingTVCellIdentifier = @"VLCRemoteBrowsingTVCell";
     self.title = nil;
     self.subtitle = nil;
     self.downloadArtwork = NO;
+    self.trimPathExtensions = NO;
 }
 
 - (void)setCouldBeAudioOnlyMedia:(BOOL)couldBeAudioOnlyMedia
@@ -83,7 +84,12 @@ NSString *const VLCRemoteBrowsingTVCellIdentifier = @"VLCRemoteBrowsingTVCell";
 
 - (void)setTitle:(NSString *)title
 {
-    self.titleLabel.text = title;
+    if (title != nil && !_isDirectory && _trimPathExtensions) {
+        self.titleLabel.text = [[title lastPathComponent] stringByDeletingPathExtension];
+    } else {
+        self.titleLabel.text = title;
+    }
+
     if (title != nil && !_isDirectory && _downloadArtwork) {
         [_artworkProvider searchForArtworkForVideoRelatedString:title];
     }

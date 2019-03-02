@@ -54,7 +54,8 @@
                                   kVLCSettingFTPTextEncoding : kVLCSettingFTPTextEncodingDefaultValue,
                                   kVLCSettingWiFiSharingIPv6 : kVLCSettingWiFiSharingIPv6DefaultValue,
                                   kVLCAutomaticallyPlayNextItem : @(YES),
-                                  kVLCSettingDownloadArtwork : @(YES)};
+                                  kVLCSettingDownloadArtwork : @(YES),
+                                  kVLCSettingTrimPathExtensions : @(NO) };
     [defaults registerDefaults:appDefaults];
 }
 

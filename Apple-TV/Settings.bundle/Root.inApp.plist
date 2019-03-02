@@ -478,6 +478,16 @@
 		</dict>
 		<dict>
 			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>SETTINGS_TRIM_PATH_EXTENSIONS</string>
+			<key>Key</key>
+			<string>trim-path-extensions</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+		<dict>
+			<key>Type</key>
 			<string>PSGroupSpecifier</string>
 			<key>Title</key>
 			<string></string>
