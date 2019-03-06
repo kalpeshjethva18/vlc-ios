@@ -70,6 +70,21 @@
 
 - (void)searchForArtworkForVideoRelatedString:(NSString *)string
 {
+    // Replace match of regex with the year filters,
+    // in order to match the format tmdb uses for search.
+    //
+    // Example: "Ghostbusters (1984)" -> "Ghostbusters y:1984"
+    NSError * err = nil;
+    NSRegularExpression *re = [[NSRegularExpression alloc] initWithPattern: @"\\s\\((\\d{4})\\)$" options:NSRegularExpressionCaseInsensitive error:&err];
+    
+    // If regex does not have any errors, replace matches.
+    if (err == nil) {
+        string = [re stringByReplacingMatchesInString:string options:0 range:NSMakeRange(0, [string length]) withTemplate:@" y:$1"];
+    } else {
+        NSLog(@"Error: Could not initialize regex for artwork year annotations: %@", err);
+    }
+    
+    // Next, try the cache for the file first.
     NSString *cacheFile = [self pathForCachedFile:string];
     NSURL *cacheFileURL = [NSURL fileURLWithPath:cacheFile];
 
@@ -88,7 +103,6 @@
             });
         });
         return;
-    }
 
     [_tmdbFetcher searchForMovie:string];
 }
