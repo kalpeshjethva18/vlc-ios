@@ -109,6 +109,7 @@
             });
         });
         return;
+    }
 
     [_tmdbFetcher searchForMovie:string];
 }
