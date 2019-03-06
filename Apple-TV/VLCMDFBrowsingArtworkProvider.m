@@ -50,7 +50,13 @@
 
 - (NSString*)pathForCachedFile:(NSString*)named
 {
-    NSString *cacheFileBase = [NSString stringWithFormat:@"%@.jpg", [named stringByDeletingPathExtension]];
+    // Set of disallowed file filename characters
+    NSCharacterSet *trimSet = [NSCharacterSet characterSetWithCharactersInString:@"/\\?%*|\"<>"];
+    
+    // Trim path extension and special characters from filenames.
+    NSString *fileName = [named stringByDeletingPathExtension];
+    NSString *trimmedName = [fileName stringByTrimmingCharactersInSet: trimSet];
+    NSString *cacheFileBase = [NSString stringWithFormat:@"%@.jpg", trimmedName];
 
     NSString *cacheFile = [[self cacheDirectory] stringByAppendingPathComponent:cacheFileBase];
     
