@@ -18,6 +18,7 @@
 @property (readwrite, weak) id<VLCRemoteBrowsingCell> artworkReceiver;
 @property (readwrite, nonatomic) BOOL searchForAudioMetadata;
 
++ (void)purgeCache;
 - (void)reset;
 - (void)searchForArtworkForVideoRelatedString:(NSString *)string;
 

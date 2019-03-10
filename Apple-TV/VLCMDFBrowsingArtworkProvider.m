@@ -32,6 +32,60 @@
     }
 }
 
++ (void)purgeCache {
+    NSString *cacheDirectory = [VLCMDFBrowsingArtworkProvider cacheDirectory];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSDirectoryEnumerator *enumerator = [fileManager enumeratorAtPath:cacheDirectory];
+    NSString *file;
+    
+    while (file = [enumerator nextObject]) {
+        NSError *error = nil;
+        NSString *pathToRemove = [cacheDirectory stringByAppendingPathComponent:file];
+        BOOL result = [fileManager removeItemAtPath:pathToRemove error:&error];
+        
+        if (!result && error) {
+            NSLog(@"Error: %@", error);
+        }
+    }
+}
+
++ (NSString*)cacheDirectory {
+    NSString *cachesPath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+    NSString *thumbnailCaches = [cachesPath stringByAppendingPathComponent:@"Thumbnails"];
+    
+    NSError * error = nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:thumbnailCaches
+                              withIntermediateDirectories:YES
+                                               attributes:nil
+                                                    error:&error];
+    if (error != nil) {
+        NSLog(@"Error creating thumbnail cache directory: %@", error);
+    }
+    
+    return thumbnailCaches;
+}
+
+- (NSString*)pathForCachedFile:(NSString*)named
+{
+    // Set of disallowed file filename characters
+    NSCharacterSet *trimSet = [NSCharacterSet characterSetWithCharactersInString:@"/\\?%*|\"<>"];
+    
+    // Trim path extension and special characters from filenames.
+    NSString *fileName = [named stringByDeletingPathExtension];
+    NSString *trimmedName = [fileName stringByTrimmingCharactersInSet: trimSet];
+    NSString *cacheFileBase = [NSString stringWithFormat:@"%@.jpg", trimmedName];
+
+    NSString *cacheFile = [[VLCMDFBrowsingArtworkProvider cacheDirectory] stringByAppendingPathComponent:cacheFileBase];
+    
+    return cacheFile;
+}
+
+-(void)saveDataToCache:(NSData*)data named:(NSString*)name
+{
+    NSString *cacheFile = [self pathForCachedFile:name];
+    [data writeToFile:cacheFile atomically:YES];
+}
+
 - (void)setSearchForAudioMetadata:(BOOL)searchForAudioMetadata
 {
     NSLog(@"there is currently no audio metadata fetcher :-(");
@@ -39,22 +93,35 @@
 
 - (void)searchForArtworkForVideoRelatedString:(NSString *)string
 {
-    NSError * err = nil;
-    
     // Replace match of regex with the year filters,
     // in order to match the format tmdb uses for search.
     //
     // Example: "Ghostbusters (1984)" -> "Ghostbusters y:1984"
+    NSString *releaseYear = nil;
+    NSError *err = nil;
     NSRegularExpression *re = [[NSRegularExpression alloc] initWithPattern: @"\\s\\((\\d{4})\\)$" options:NSRegularExpressionCaseInsensitive error:&err];
     
-    // If regex does not have any errors, replace matches.
+    // Search for matches
+    NSString *basename = [string stringByDeletingPathExtension];
+    NSArray *matches = [re matchesInString:string options:NSMatchingWithTransparentBounds range:NSMakeRange(0, [basename length])];
+    
+    // Parse capture groups
+    for (NSTextCheckingResult *match in matches) {
+        NSRange matchRange = [match rangeAtIndex:1];
+        NSString *matchString = [string substringWithRange:matchRange];
+        releaseYear = matchString;
+    }
+
+    // Remove extra data to prepare foe search
+    NSString * searchString = string;
     if (err == nil) {
-        string = [re stringByReplacingMatchesInString:string options:0 range:NSMakeRange(0, [string length]) withTemplate:@" y:$1"];
+        searchString = [re stringByReplacingMatchesInString:searchString options:0 range:NSMakeRange(0, [basename length]) withTemplate:@""];
     } else {
         NSLog(@"Error: Could not initialize regex for artwork year annotations: %@", err);
     }
-
-    [_tmdbFetcher searchForMovie:string];
+    
+    [_tmdbFetcher searchForMovie:searchString releaseYear:releaseYear language:nil includeAdult:NO];
+//    [_tmdbFetcher searchForMovie:string];
 }
 
 #pragma mark - MDFMovieDB
