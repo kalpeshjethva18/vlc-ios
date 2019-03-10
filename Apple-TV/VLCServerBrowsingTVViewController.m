@@ -16,6 +16,7 @@
 #import "VLCServerBrowsingController.h"
 #import "VLCMaskView.h"
 #import "GRKArrayDiff+UICollectionView.h"
+#import "VLCMDFBrowsingArtworkProvider.h"
 
 @interface VLCServerBrowsingTVViewController ()
 {
@@ -42,6 +43,10 @@
         self.trimPathExtensions = [[NSUserDefaults standardUserDefaults] boolForKey:kVLCSettingTrimPathExtensions];
 
         self.downloadArtwork = [[NSUserDefaults standardUserDefaults] boolForKey:kVLCSettingDownloadArtwork];
+        
+        if (!self.downloadArtwork) {
+            [VLCMDFBrowsingArtworkProvider purgeCache];
+        }
     }
     return self;
 }
